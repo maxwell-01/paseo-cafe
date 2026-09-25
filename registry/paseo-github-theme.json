@@ -1,7 +1,7 @@
 {
   "repo": "alhassanaraouf/paseo-themes",
-  "path": "packages/paseo-github-theme-theme",
-  "package": "@alhassanaraouf/paseo-github-theme-theme",
+  "path": "packages/paseo-github-theme",
+  "package": "@alhassanaraouf/paseo-github-theme",
   "categories": ["theme"],
   "submittedBy": "alhassanaraouf"
 }

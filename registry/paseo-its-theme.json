@@ -1,7 +1,7 @@
 {
   "repo": "alhassanaraouf/paseo-themes",
-  "path": "packages/paseo-its-theme-theme",
-  "package": "@alhassanaraouf/paseo-its-theme-theme",
+  "path": "packages/paseo-its-theme",
+  "package": "@alhassanaraouf/paseo-its-theme",
   "categories": ["theme"],
   "submittedBy": "alhassanaraouf"
 }
