@@ -34,6 +34,7 @@ import {
   isDefaultDirectoryBrowseView,
   isDirectoryRecencyKnown,
   normalizeDirectoryCategories,
+  setAutomaticUpdatePreference,
 } from "../shared/directory"
 import { filterAccessibilityLabel } from "./accessibility"
 import { BrandMark } from "./BrandMark"
@@ -50,6 +51,10 @@ import { CAFE_CONTROL_RADIUS, CAFE_MONO_FONT } from "./visual"
 
 const DIRECTORY_QUERY_KEY = "paseo-cafe-directory"
 const UPDATE_STATUS_QUERY_KEY = "paseo-cafe-update-status"
+
+export function canQueueAutomaticUpdatePreference(status: string): boolean {
+  return status !== "error" && status !== "invalid"
+}
 
 type ReleaseChannel = "stable" | "preview"
 
@@ -431,6 +436,12 @@ export function DirectorySurface({ theme, layout }: PluginSurfaceProps) {
     channel: ReleaseChannel
     attempts: number
   } | null>(null)
+  const [pendingAutomaticPreference, setPendingAutomaticPreference] = useState<{
+    installationId: string
+    enabled: boolean
+    attempts: number
+  } | null>(null)
+
   const reconcilingSelfUpdate = useRef<string | null>(null)
   const unknownSelfUpdateNotice = useRef<string | null>(null)
   const [failedSelfUpdateAttempt, setFailedSelfUpdateAttempt] = useState<
@@ -554,6 +565,51 @@ export function DirectorySurface({ theme, layout }: PluginSurfaceProps) {
     settingsSaving,
     settingsValues,
   ])
+  useEffect(() => {
+    if (
+      !pendingAutomaticPreference ||
+      !settingsValues ||
+      settingsRevision === null ||
+      settingsSaving
+    ) {
+      return
+    }
+    const pending = pendingAutomaticPreference
+    void saveSettings(
+      {
+        ...settingsValues,
+        autoUpdateOptOuts: setAutomaticUpdatePreference(
+          settingsValues.autoUpdateOptOuts,
+          pending.installationId,
+          pending.enabled
+        ),
+      },
+      settingsRevision
+    ).then((saved) => {
+      if (saved) {
+        setPendingAutomaticPreference(null)
+      } else if (pending.attempts < 1) {
+        void reloadSettings().finally(() => {
+          setPendingAutomaticPreference((current) =>
+            current === pending
+              ? { ...pending, attempts: pending.attempts + 1 }
+              : current
+          )
+        })
+      } else {
+        setPendingAutomaticPreference(null)
+        toast.error("Failed to save automatic update preference.")
+      }
+    })
+  }, [
+    pendingAutomaticPreference,
+    reloadSettings,
+    saveSettings,
+    settingsRevision,
+    settingsSaving,
+    settingsValues,
+    toast,
+  ])
 
   // Undefined until settings are readable: the handler then falls back to
   // PASEO_CAFE_DIRECTORY_URL or the default catalog, so an unreadable or
@@ -638,6 +694,17 @@ export function DirectorySurface({ theme, layout }: PluginSurfaceProps) {
       await reloadSettings()
     }
     return saved
+  }
+  const saveAutomaticUpdatePreference = (
+    installationId: string,
+    enabled: boolean
+  ) => {
+    if (!canQueueAutomaticUpdatePreference(settings.status)) {
+      toast.error("Failed to save automatic update preference.")
+      return
+    }
+    setPendingAutomaticPreference({ installationId, enabled, attempts: 0 })
+    if (!settingsValues) void reloadSettings()
   }
 
   useEffect(() => {
@@ -1307,6 +1374,13 @@ export function DirectorySurface({ theme, layout }: PluginSurfaceProps) {
         }
         onUpdate={(installation, channel) =>
           updateMutation.mutate({ entry: detailEntry, installation, channel })
+        }
+        autoUpdateOptOuts={settingsValues?.autoUpdateOptOuts ?? []}
+        onAutoUpdateChange={saveAutomaticUpdatePreference}
+        autoUpdateSaving={
+          settings.status !== "ready" ||
+          settingsSaving ||
+          pendingAutomaticPreference !== null
         }
         onOpenGallery={() => setGalleryEntry(detailEntry)}
         onBack={() => {

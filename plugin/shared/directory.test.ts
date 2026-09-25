@@ -47,6 +47,7 @@ import {
   migrateDirectorySettings,
   normalizeDirectoryCategories,
   normalizeDirectoryCategory,
+  setAutomaticUpdatePreference,
   stripHtml,
 } from "./directory"
 
@@ -791,6 +792,21 @@ describe("directory taxonomy and browse settings", () => {
     expect(directorySettings.version).toBe(4)
   })
 
+  it("persists automatic update opt-outs without duplicates", () => {
+    expect(setAutomaticUpdatePreference([], "review", true)).toEqual([])
+    expect(setAutomaticUpdatePreference([], "review", false)).toEqual([
+      "review",
+    ])
+    expect(
+      setAutomaticUpdatePreference(
+        ["review", "other", "review"],
+        "review",
+        true
+      )
+    ).toEqual(["other"])
+    expect(directorySettings.schema.parse({}).autoUpdateOptOuts).toEqual([])
+  })
+
   it("treats reordered category selections as the same persisted state", () => {
     const left = {
       ...DEFAULT_DIRECTORY_BROWSE_SETTINGS,
@@ -825,6 +841,7 @@ describe("directory taxonomy and browse settings", () => {
       directoryUrl,
       browse: DEFAULT_DIRECTORY_BROWSE_SETTINGS,
       previewOptIns: [],
+      autoUpdateOptOuts: [],
       pendingSelfUpdate: null,
     })
   })

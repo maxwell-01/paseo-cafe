@@ -22,6 +22,13 @@ When a package publishes a distinct `next` dist-tag, the detail page offers that
 version as an opt-in Preview. Stable remains the default. Preview users receive updates from the
 preview channel until they explicitly return to stable.
 
+Automatic updates are enabled by default for every reviewed npm installation. Disable them per
+installation from the plugin detail page when a plugin should stay pinned; Cafe checks shortly
+after startup and every six hours, always following that installation's selected Stable or Preview
+channel. Updates install the exact security-scanned catalog version, never downgrade, and isolate
+failures between plugins. Cafe updates itself through the same policy using its restart-safe
+detached handoff. **Settings → Plugins → Paseo Cafe → Check now** runs the policy immediately.
+
 ## Screenshots
 
 ### Browse the Catppuccin theme cards
